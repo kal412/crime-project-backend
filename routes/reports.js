@@ -22,4 +22,27 @@ router.post("/new", [core.validJWTNeeded], async (req, res) => {
     .catch((err) => res.status(433).json({ err: err }));
 });
 
+/* UPDATE REPORT STATUS */
+router.patch("/:reportId", async (req, res) => {
+  let reportId = req.params.reportId;
+
+  //Search record in database if any
+  let report = await database.table("reports").filter({ id: reportId }).get();
+  if (report) {
+    let reportStatus = req.body.status;
+    if (reportStatus === undefined || "") {
+      res.status(422).json({ message: "Unprocessable identity or undefined" });
+    } else {
+      await database
+        .table("reports")
+        .filter({ id: reportId })
+        .update({
+          status: reportStatus,
+        })
+        .then((result) => res.json("Status updated succesfully"))
+        .catch((err) => res.json(err));
+    }
+  }
+});
+
 module.exports = router;

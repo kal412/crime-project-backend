@@ -19,7 +19,6 @@ router.get("/", async (req, res) => {
       "r.description",
       "r.reported_at",
       "r.status",
-      "u.id",
       "u.username",
     ])
     .getAll()
@@ -37,6 +36,7 @@ router.get("/", async (req, res) => {
 router.get("/:search", [core.validJWTNeeded], async (req, res) => {
   let reportUserName = req.params.search;
   let reportCrimeType = req.params.search;
+  let reportDate = req.params.search;
   console.log(reportUserName);
   await database
     .table("reports as r")
@@ -59,6 +59,7 @@ router.get("/:search", [core.validJWTNeeded], async (req, res) => {
       $or: [
         { "u.username": reportUserName },
         { "r.crime_type": reportCrimeType },
+        { "r.reported_at": reportDate },
       ],
     })
     .getAll()
@@ -67,7 +68,7 @@ router.get("/:search", [core.validJWTNeeded], async (req, res) => {
       if (reports.length > 0) {
         res.json(reports);
       } else {
-        res.json({ message: `No reports found under ${reportUserName}` });
+        res.json({ message: "No reports found" });
       }
     })
     .catch((err) => res.json(err));

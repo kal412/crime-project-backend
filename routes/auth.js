@@ -8,31 +8,76 @@ const bcrypt = require("bcrypt");
 
 require("dotenv").config();
 
+// REFRESH TOKEN ROUTE
+router.post("/refresh", async (req, res) => {
+  const refreshToken = req.body.token;
+  if (refreshToken == null) return res.sendStatus(401);
+  const token = await database
+    .table("tokens")
+    .filter({ token: refreshToken })
+    .get();
+  if (!token.token) return res.sendStatus(403);
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.body.username = user;
+    const accessToken = generateAccessToken(user);
+    res.json({ accessToken: accessToken });
+  });
+});
+
 // LOGIN ROUTE
 router.post(
   "/signin",
   [core.hasAuthFields, core.isPasswordAndUserMatch],
   async (req, res) => {
-    let token = jwt.sign(
-      { state: true, username: req.body.username },
-      process.env.ACCESS_TOKEN_SECRET,
-      {
-        algorithm: "HS512",
-        expiresIn: "3h",
-      }
-    );
+    const username = req.body.username;
+    const accessToken = generateAccessToken(username);
+    const refreshToken = jwt.sign(username, process.env.REFRESH_TOKEN_SECRET);
+    await database
+      .table("tokens")
+      .insert({
+        token: refreshToken,
+      })
+      .catch((err) => res.status(433).json({ err: err }));
+
     const user = await database
       .table("users")
       .filter({ username: req.body.username })
       .get();
     res.json({
-      token: token,
+      token: accessToken,
+      refreshToken: refreshToken,
       auth: true,
       username: req.body.username,
       id: user.id,
     });
   }
 );
+
+// FUNCTION TO GENERATE ACCESS TOKEN
+function generateAccessToken(username) {
+  return jwt.sign({ username }, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: "15s",
+  });
+}
+
+// LOGOUT ROUTE
+router.delete("/logout", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  const deleteToken = await core.database
+    .table("tokens")
+    .filter({ token: token })
+    .get();
+  if (deleteToken) {
+    await core.database
+      .table("tokens")
+      .filter({ id: deleteToken.id })
+      .remove()
+      .then(res.status(200).json({ message: "Deleted successfully" }))
+      .catch((err) => res.status(433).json({ err: err }));
+  }
+});
 
 // REGISTER ROUTE
 router.post(
@@ -91,6 +136,7 @@ router.post(
           lname: lname || null,
           fname: fname || null,
         })
+        .then(res.status(200).json({ message: "Registered successfully" }))
         .catch((err) => res.status(433).json({ err: err }));
     }
   }
