@@ -19,8 +19,8 @@ router.post("/refresh", async (req, res) => {
   if (!token.token) return res.sendStatus(403);
   jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
-    req.body.username = user;
-    const accessToken = generateAccessToken(user);
+    req.body.user = user;
+    const accessToken = generateAccessToken(user.username);
     res.json({ accessToken: accessToken });
   });
 });
@@ -64,7 +64,7 @@ router.post(
 // FUNCTION TO GENERATE ACCESS TOKEN
 function generateAccessToken(username) {
   return jwt.sign({ username }, process.env.ACCESS_TOKEN_SECRET, {
-    expiresIn: "15s",
+    expiresIn: "5m",
   });
 }
 

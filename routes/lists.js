@@ -37,7 +37,6 @@ router.get("/:search", [core.validJWTNeeded], async (req, res) => {
   let reportUserName = req.params.search;
   let reportCrimeType = req.params.search;
   let reportDate = req.params.search;
-  console.log(reportUserName);
   await database
     .table("reports as r")
     .join([
@@ -64,7 +63,6 @@ router.get("/:search", [core.validJWTNeeded], async (req, res) => {
     })
     .getAll()
     .then((reports) => {
-      console.log(reports);
       if (reports.length > 0) {
         res.json(reports);
       } else {
