@@ -23,7 +23,7 @@ router.post("/new", [core.validJWTNeeded], async (req, res) => {
 });
 
 /* UPDATE REPORT STATUS */
-router.patch("/:reportId", async (req, res) => {
+router.patch("/:reportId", [core.validJWTNeeded], async (req, res) => {
   let reportId = req.params.reportId;
 
   //Search record in database if any

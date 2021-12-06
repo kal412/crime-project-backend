@@ -32,7 +32,13 @@ router.post(
   async (req, res) => {
     const username = req.body.username;
     const accessToken = generateAccessToken(username);
-    const refreshToken = jwt.sign(username, process.env.REFRESH_TOKEN_SECRET);
+    const refreshToken = jwt.sign(
+      { username },
+      process.env.REFRESH_TOKEN_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
     await database
       .table("tokens")
       .insert({
@@ -50,6 +56,7 @@ router.post(
       auth: true,
       username: req.body.username,
       id: user.id,
+      role: user.role,
     });
   }
 );
@@ -125,6 +132,7 @@ router.post(
       let password = await bcrypt.hash(req.body.password, 10);
       let fname = req.body.fname;
       let lname = req.body.lname;
+      let role = req.body.role;
 
       core.database
         .table("users")
@@ -132,7 +140,7 @@ router.post(
           username: username,
           password: password,
           email: email,
-          role: 222,
+          role: role,
           lname: lname || null,
           fname: fname || null,
         })

@@ -4,7 +4,7 @@ const { database } = require("../core/pool");
 const core = require("../core/pool");
 
 /* GET ALL REPORTS */
-router.get("/", async (req, res) => {
+router.get("/", [core.validJWTNeeded], async (req, res) => {
   await database
     .table("reports as r")
     .join([

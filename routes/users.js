@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { database } = require("../core/pool");
+const bcrypt = require("bcrypt");
 
 /* GET USERS LISTING */
 router.get("/", (req, res) => {
@@ -26,18 +27,20 @@ router.get("/", (req, res) => {
     .catch((err) => res.json(err));
 });
 
-/* GET ONE USER MATCHING ID */
-router.get("/:userId", (req, res) => {
-  let userId = req.params.userId;
+/* GET ONE USER MATCHING EMAIL */
+router.get("/:userEmail", (req, res) => {
+  let userEmail = req.params.userEmail;
   database
     .table("users")
-    .filter({ id: userId })
+    .filter({ email: userEmail })
     .get()
     .then((user) => {
       if (user) {
         res.json(user);
       } else {
-        res.json({ message: `NO USER FOUND WITH ID: ${userId}` });
+        res
+          .status(404)
+          .json({ message: `NO USER FOUND WITH ID: ${userEmail}` });
       }
     })
     .catch((err) => res.json(err));
@@ -50,17 +53,20 @@ router.patch("/:userId", async (req, res) => {
   //Search user in database if any
   let user = await database.table("users").filter({ id: userId }).get();
   if (user) {
-    let userPassword = req.body.password;
+    let userPassword = await bcrypt.hash(req.body.password, 10);
 
-    //Replace the user's information with the form data
-    database
-      .table("users")
-      .filter({ id: userId })
-      .update({
-        password: userPassword !== undefined ? userPassword : user.password,
-      })
-      .then((result) => res.json("Password updated succesfully"))
-      .catch((err) => res.json(err));
+    if (userPassword === undefined || "") {
+      res.status(422).json({ message: "Unprocessable identity or undefined" });
+    } else {
+      database
+        .table("users")
+        .filter({ id: user.id })
+        .update({
+          password: userPassword,
+        })
+        .then((result) => res.json("Password updated succesfully"))
+        .catch((err) => res.json(err));
+    }
   }
 });
 
